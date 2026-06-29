@@ -8,7 +8,7 @@
 
 **Voice2Task** es una aplicación Android que convierte notas de voz en tareas estructuradas usando inteligencia artificial. Este repositorio contiene el backend: la API REST que gestiona la autenticación, el almacenamiento de tareas y el procesamiento de audio con Whisper y Groq.
 
-> Evolución natural del proyecto [bot-to-trello](https://github.com/ArocaDev/bot-to-trello): de un bot de Telegram a un producto propio independiente.
+> Evolución del proyecto [bot-to-trello](https://github.com/ArocaDev/bot-to-trello): de un bot de Telegram a un producto propio independiente.
 
 ---
 
