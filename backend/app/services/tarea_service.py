@@ -11,8 +11,11 @@ from app.schemas.tarea import AudioProcesamientoResponse, TareaCreate
 from app.services import llm_service, whisper_service
 
 
-def get_tareas_usuario(db: Session, usuario_id: int) -> List[Tarea]:
-    return db.query(Tarea).filter(Tarea.usuario_id == usuario_id).order_by(Tarea.created_at.desc()).all()
+def get_tareas_usuario(db: Session, usuario_id: int, lista_id: Optional[int] = None) -> List[Tarea]:
+    query = db.query(Tarea).filter(Tarea.usuario_id == usuario_id)
+    if lista_id is not None:
+        query = query.filter(Tarea.lista_id == lista_id)
+    return query.order_by(Tarea.created_at.desc()).all()
 
 
 def get_tarea(db: Session, tarea_id: int, usuario_id: int) -> Optional[Tarea]:
@@ -22,6 +25,7 @@ def get_tarea(db: Session, tarea_id: int, usuario_id: int) -> Optional[Tarea]:
 def crear_tarea(db: Session, datos: TareaCreate, usuario_id: int) -> Tarea:
     tarea = Tarea(
         usuario_id=usuario_id,
+        lista_id=datos.lista_id,
         titulo=datos.titulo,
         descripcion=datos.descripcion,
         fecha_limite=datos.fecha_limite,
@@ -44,6 +48,7 @@ def crear_tarea_desde_audio_datos(db: Session, datos: dict, usuario_id: int) -> 
 
     tarea = Tarea(
         usuario_id=usuario_id,
+        lista_id=datos.get("lista_id"),
         titulo=datos["titulo"],
         descripcion=datos["descripcion"],
         fecha_limite=fecha_limite,

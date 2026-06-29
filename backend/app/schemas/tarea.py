@@ -11,6 +11,7 @@ class TareaCreate(BaseModel):
     descripcion: Optional[str] = None
     fecha_limite: Optional[datetime] = None
     prioridad: Prioridad = Prioridad.MEDIA
+    lista_id: Optional[int] = None
 
 
 class TareaUpdate(BaseModel):
@@ -22,6 +23,7 @@ class TareaUpdate(BaseModel):
 
 class TareaResponse(BaseModel):
     id: int
+    lista_id: Optional[int]
     titulo: str
     descripcion: Optional[str]
     fecha_limite: Optional[datetime]

@@ -29,6 +29,7 @@ class Tarea(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     usuario_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
+    lista_id = Column(Integer, ForeignKey("listas.id"), nullable=True)
     titulo = Column(String(255), nullable=False)
     descripcion = Column(Text, nullable=True)
     fecha_limite = Column(DateTime, nullable=True)

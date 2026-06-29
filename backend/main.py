@@ -4,7 +4,7 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 
-from app.api import auth, tareas
+from app.api import auth, tareas, listas
 from app.db.database import Base, engine
 
 Base.metadata.create_all(bind=engine)
@@ -34,6 +34,7 @@ app.add_middleware(
 
 app.include_router(auth.router, prefix="/api")
 app.include_router(tareas.router, prefix="/api")
+app.include_router(listas.router, prefix="/api")
 
 
 @app.get("/")

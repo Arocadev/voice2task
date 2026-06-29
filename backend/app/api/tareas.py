@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
@@ -14,10 +14,11 @@ router = APIRouter(prefix="/tareas", tags=["tareas"])
 
 @router.get("/", response_model=List[TareaResponse])
 def listar_tareas(
+    lista_id: Optional[int] = None,
     db: Session = Depends(get_db),
     usuario: Usuario = Depends(get_current_user),
 ):
-    return tarea_service.get_tareas_usuario(db, usuario.id)
+    return tarea_service.get_tareas_usuario(db, usuario.id, lista_id)
 
 
 @router.get("/{tarea_id}", response_model=TareaResponse)
