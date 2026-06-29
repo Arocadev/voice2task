@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from sqlalchemy.orm import Session
 
 from app.core.security import create_access_token, hash_password, verify_password
@@ -7,10 +9,12 @@ from app.models.usuario import Usuario
 from app.schemas.auth import LoginRequest, RegistroRequest, TokenResponse, UsuarioResponse
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+limiter = Limiter(key_func=get_remote_address)
 
 
 @router.post("/registro", response_model=UsuarioResponse, status_code=status.HTTP_201_CREATED)
-def registro(datos: RegistroRequest, db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+def registro(request: Request, datos: RegistroRequest, db: Session = Depends(get_db)):
     if db.query(Usuario).filter(Usuario.email == datos.email).first():
         raise HTTPException(status_code=400, detail="El email ya está registrado")
     if db.query(Usuario).filter(Usuario.username == datos.username).first():
@@ -28,7 +32,8 @@ def registro(datos: RegistroRequest, db: Session = Depends(get_db)):
 
 
 @router.post("/login", response_model=TokenResponse)
-def login(datos: LoginRequest, db: Session = Depends(get_db)):
+@limiter.limit("10/minute")
+def login(request: Request, datos: LoginRequest, db: Session = Depends(get_db)):
     usuario = db.query(Usuario).filter(Usuario.email == datos.email).first()
     if not usuario or not verify_password(datos.password, usuario.password_hash):
         raise HTTPException(status_code=401, detail="Credenciales incorrectas")

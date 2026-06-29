@@ -47,6 +47,15 @@ async def procesar_audio(
     db: Session = Depends(get_db),
     usuario: Usuario = Depends(get_current_user),
 ):
+    tipos_permitidos = {"audio/ogg", "audio/wav", "audio/mpeg", "audio/mp4", "audio/webm"}
+    if audio.content_type not in tipos_permitidos:
+        raise HTTPException(status_code=400, detail="Formato de audio no soportado")
+
+    contenido = await audio.read()
+    if len(contenido) > 25 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="El audio no puede superar 25MB")
+    await audio.seek(0)
+
     return await tarea_service.procesar_audio(db, audio, usuario.id)
 
 
