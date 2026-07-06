@@ -1,18 +1,16 @@
-import whisper
+from groq import Groq
 
 from app.core.config import settings
 
-_model = None
-
-
-def get_model():
-    global _model
-    if _model is None:
-        _model = whisper.load_model(settings.WHISPER_MODEL)
-    return _model
+client = Groq(api_key=settings.GROQ_API_KEY)
 
 
 def transcribir_audio(ruta_audio: str) -> str:
-    model = get_model()
-    resultado = model.transcribe(ruta_audio)
-    return resultado["text"].strip()
+    with open(ruta_audio, "rb") as archivo:
+        transcripcion = client.audio.transcriptions.create(
+            file=archivo,
+            model="whisper-large-v3-turbo",
+            language="es",
+            response_format="text",
+        )
+    return transcripcion.strip() if isinstance(transcripcion, str) else transcripcion.text.strip()

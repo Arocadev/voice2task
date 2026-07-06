@@ -1,10 +1,12 @@
 import json
+import re
 
 from groq import Groq
 
 from app.core.config import settings
 
 client = Groq(api_key=settings.GROQ_API_KEY)
+MODELO = settings.GROQ_MODEL
 
 SYSTEM_PROMPT = """Eres un asistente que convierte texto transcrito en tareas estructuradas.
 
@@ -22,20 +24,30 @@ Ejemplo de salida:
 
 def procesar_transcripcion(texto: str) -> dict:
     respuesta = client.chat.completions.create(
-        model="qwen/qwen3.6-27b",
+        model=MODELO,
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": f"Convierte esta nota de voz en una tarea: {texto}"},
         ],
         temperature=0.3,
+        reasoning_effort="none",
     )
 
-    contenido = respuesta.choices[0].message.content.strip()
+    contenido = respuesta.choices[0].message.content or ""
+    contenido = contenido.strip()
+
+    contenido = re.sub(r"<think>.*?</think>", "", contenido, flags=re.DOTALL).strip()
 
     if contenido.startswith("```"):
-        contenido = contenido.split("```")[1]
-        if contenido.startswith("json"):
-            contenido = contenido[4:]
+        contenido = re.sub(r"^```(?:json)?\s*", "", contenido)
+        contenido = re.sub(r"\s*```$", "", contenido).strip()
+
+    match = re.search(r"\{.*\}", contenido, re.DOTALL)
+    if match:
+        contenido = match.group(0)
+
+    if not contenido:
+        raise ValueError("El modelo no devolvió contenido válido")
 
     datos = json.loads(contenido)
 

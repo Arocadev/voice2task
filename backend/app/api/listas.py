@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.core.deps import get_current_user
 from app.db.database import get_db
 from app.models.lista import Lista
+from app.models.tarea import Tarea
 from app.models.usuario import Usuario
 from app.schemas.lista import ListaCreate, ListaResponse, ListaUpdate
 
@@ -65,5 +66,6 @@ def eliminar_lista(
     lista = db.query(Lista).filter(Lista.id == lista_id, Lista.usuario_id == usuario.id).first()
     if not lista:
         raise HTTPException(status_code=404, detail="Lista no encontrada")
+    db.query(Tarea).filter(Tarea.lista_id == lista_id).delete()
     db.delete(lista)
     db.commit()
