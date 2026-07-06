@@ -1,9 +1,7 @@
 import re
 
-from pydantic import BaseModel, EmailStr, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, field_validator
 
-
-# Caracteres permitidos en username (alfanumérico + guion + guion bajo)
 _USERNAME_RE = re.compile(r"^[a-zA-Z0-9_-]+$")
 
 
@@ -66,9 +64,8 @@ class TokenResponse(BaseModel):
 
 
 class UsuarioResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     username: str
     email: str
-
-    class Config:
-        from_attributes = True

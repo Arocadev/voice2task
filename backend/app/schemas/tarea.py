@@ -1,12 +1,10 @@
 from datetime import datetime
 from typing import List, Optional
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator
 
 from app.models.tarea import Origen, Prioridad
 
-
-# ── Crear ──────────────────────────────────────────────────────────────────────
 
 class TareaCreate(BaseModel):
     titulo: str
@@ -32,8 +30,6 @@ class TareaCreate(BaseModel):
             raise ValueError("La descripción no puede superar 2000 caracteres")
         return v
 
-
-# ── Editar ─────────────────────────────────────────────────────────────────────
 
 class TareaUpdate(BaseModel):
     titulo: Optional[str] = None
@@ -62,9 +58,9 @@ class TareaUpdate(BaseModel):
         return v
 
 
-# ── Respuesta ──────────────────────────────────────────────────────────────────
-
 class TareaResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     lista_id: Optional[int]
     titulo: str
@@ -79,11 +75,6 @@ class TareaResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
-
-
-# ── Audio ──────────────────────────────────────────────────────────────────────
 
 class AudioProcesamientoResponse(BaseModel):
     titulo: str
@@ -92,8 +83,6 @@ class AudioProcesamientoResponse(BaseModel):
     prioridad: Prioridad
     audio_transcripcion: str
 
-
-# ── Búsqueda ───────────────────────────────────────────────────────────────────
 
 class BusquedaResponse(BaseModel):
     total: int
