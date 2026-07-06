@@ -1,3 +1,4 @@
+import os
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
@@ -20,8 +21,8 @@ from app.services import tarea_service
 router = APIRouter(prefix="/tareas", tags=["tareas"])
 limiter = Limiter(key_func=get_remote_address)
 
+_T = os.getenv("TESTING") == "1"
 
-# ── Listar / filtrar ───────────────────────────────────────────────────────────
 
 @router.get("/", response_model=List[TareaResponse])
 def listar_tareas(
@@ -32,13 +33,6 @@ def listar_tareas(
     db: Session = Depends(get_db),
     usuario: Usuario = Depends(get_current_user),
 ):
-    """
-    Lista tareas del usuario. Acepta filtros opcionales:
-    - `lista_id`: filtrar por lista
-    - `completada`: true/false
-    - `importante`: true/false
-    - `prioridad`: BAJA / MEDIA / ALTA
-    """
     hay_filtros = any(p is not None for p in [completada, importante, prioridad])
     if hay_filtros or lista_id is not None:
         return tarea_service.filtrar_tareas(
@@ -56,22 +50,18 @@ def listar_importantes(
     db: Session = Depends(get_db),
     usuario: Usuario = Depends(get_current_user),
 ):
-    """Devuelve todas las tareas marcadas como importantes."""
     return tarea_service.get_tareas_importantes(db, usuario.id)
 
 
 @router.get("/buscar", response_model=BusquedaResponse)
 def buscar(
-    q: str = Query(..., min_length=1, max_length=200, description="Texto a buscar"),
+    q: str = Query(..., min_length=1, max_length=200),
     db: Session = Depends(get_db),
     usuario: Usuario = Depends(get_current_user),
 ):
-    """Busca en título y descripción de las tareas del usuario."""
     tareas = tarea_service.buscar_tareas(db, usuario.id, q)
     return BusquedaResponse(total=len(tareas), tareas=tareas)
 
-
-# ── Detalle ────────────────────────────────────────────────────────────────────
 
 @router.get("/{tarea_id}", response_model=TareaResponse)
 def detalle_tarea(
@@ -85,8 +75,6 @@ def detalle_tarea(
     return tarea
 
 
-# ── Crear ──────────────────────────────────────────────────────────────────────
-
 @router.post("/", response_model=TareaResponse, status_code=status.HTTP_201_CREATED)
 def crear_tarea(
     datos: TareaCreate,
@@ -96,8 +84,6 @@ def crear_tarea(
     return tarea_service.crear_tarea(db, datos, usuario.id)
 
 
-# ── Editar ─────────────────────────────────────────────────────────────────────
-
 @router.patch("/{tarea_id}", response_model=TareaResponse)
 def editar_tarea(
     tarea_id: int,
@@ -105,14 +91,11 @@ def editar_tarea(
     db: Session = Depends(get_db),
     usuario: Usuario = Depends(get_current_user),
 ):
-    """Edita campos de una tarea (solo los campos enviados). Incluye `importante`."""
     tarea = tarea_service.get_tarea(db, tarea_id, usuario.id)
     if not tarea:
         raise HTTPException(status_code=404, detail="Tarea no encontrada")
     return tarea_service.editar_tarea(db, tarea, datos)
 
-
-# ── Acciones ───────────────────────────────────────────────────────────────────
 
 @router.put("/{tarea_id}/completar", response_model=TareaResponse)
 def completar_tarea(
@@ -129,11 +112,10 @@ def completar_tarea(
 @router.put("/{tarea_id}/importante", response_model=TareaResponse)
 def marcar_importante(
     tarea_id: int,
-    importante: bool = Query(..., description="true para marcar, false para desmarcar"),
+    importante: bool = Query(...),
     db: Session = Depends(get_db),
     usuario: Usuario = Depends(get_current_user),
 ):
-    """Marca o desmarca una tarea como importante."""
     tarea = tarea_service.get_tarea(db, tarea_id, usuario.id)
     if not tarea:
         raise HTTPException(status_code=404, detail="Tarea no encontrada")
@@ -152,21 +134,14 @@ def eliminar_tarea(
     tarea_service.eliminar_tarea(db, tarea)
 
 
-# ── Audio ──────────────────────────────────────────────────────────────────────
-
 @router.post("/audio", response_model=AudioProcesamientoResponse)
-@limiter.limit("10/minute")
+@limiter.limit("10000/minute" if _T else "10/minute")
 async def procesar_audio(
     request: Request,
     audio: UploadFile = File(...),
     db: Session = Depends(get_db),
     usuario: Usuario = Depends(get_current_user),
 ):
-    """
-    Procesa un archivo de audio: transcribe con Whisper y estructura con LLM.
-    Rate limit: 10 peticiones/minuto por IP.
-    Validaciones: extensión, mime type, tamaño (≤25 MB).
-    """
     try:
         return await tarea_service.procesar_audio(db, audio, usuario.id)
     except ValueError as e:

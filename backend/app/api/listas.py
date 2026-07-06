@@ -1,3 +1,4 @@
+import os
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -16,10 +17,11 @@ router = APIRouter(prefix="/listas", tags=["listas"])
 limiter = Limiter(key_func=get_remote_address)
 
 MAX_LISTAS_POR_USUARIO = 50
+_T = os.getenv("TESTING") == "1"
 
 
 @router.get("/", response_model=List[ListaResponse])
-@limiter.limit("60/minute")
+@limiter.limit("10000/minute" if _T else "60/minute")
 def listar_listas(
     request: Request,
     db: Session = Depends(get_db),
@@ -29,7 +31,7 @@ def listar_listas(
 
 
 @router.post("/", response_model=ListaResponse, status_code=status.HTTP_201_CREATED)
-@limiter.limit("20/minute")
+@limiter.limit("10000/minute" if _T else "20/minute")
 def crear_lista(
     request: Request,
     datos: ListaCreate,
@@ -55,7 +57,7 @@ def crear_lista(
 
 
 @router.put("/{lista_id}", response_model=ListaResponse)
-@limiter.limit("30/minute")
+@limiter.limit("10000/minute" if _T else "30/minute")
 def editar_lista(
     request: Request,
     lista_id: int,
@@ -76,7 +78,7 @@ def editar_lista(
 
 
 @router.delete("/{lista_id}", status_code=status.HTTP_204_NO_CONTENT)
-@limiter.limit("20/minute")
+@limiter.limit("10000/minute" if _T else "20/minute")
 def eliminar_lista(
     request: Request,
     lista_id: int,

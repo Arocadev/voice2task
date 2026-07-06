@@ -1,3 +1,5 @@
+import os
+
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, field_validator
@@ -16,6 +18,8 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 limiter = Limiter(key_func=get_remote_address)
 bearer_scheme = HTTPBearer()
 
+_T = os.getenv("TESTING") == "1"
+
 
 class CambiarPasswordRequest(BaseModel):
     password_actual: str
@@ -32,7 +36,7 @@ class CambiarPasswordRequest(BaseModel):
 
 
 @router.post("/registro", response_model=UsuarioResponse, status_code=status.HTTP_201_CREATED)
-@limiter.limit("5/minute")
+@limiter.limit("10000/minute" if _T else "5/minute")
 def registro(request: Request, datos: RegistroRequest, db: Session = Depends(get_db)):
     if db.query(Usuario).filter(Usuario.email == datos.email).first():
         raise HTTPException(status_code=400, detail="El email ya está registrado")
@@ -51,7 +55,7 @@ def registro(request: Request, datos: RegistroRequest, db: Session = Depends(get
 
 
 @router.post("/login", response_model=TokenResponse)
-@limiter.limit("10/minute")
+@limiter.limit("10000/minute" if _T else "10/minute")
 def login(request: Request, datos: LoginRequest, db: Session = Depends(get_db)):
     usuario = db.query(Usuario).filter(Usuario.email == datos.email).first()
     if not usuario or not verify_password(datos.password, usuario.password_hash):
@@ -62,7 +66,7 @@ def login(request: Request, datos: LoginRequest, db: Session = Depends(get_db)):
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
-@limiter.limit("20/minute")
+@limiter.limit("10000/minute" if _T else "20/minute")
 def logout(
     request: Request,
     credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
@@ -78,13 +82,13 @@ def logout(
 
 
 @router.get("/me", response_model=UsuarioResponse)
-@limiter.limit("30/minute")
+@limiter.limit("10000/minute" if _T else "30/minute")
 def me(request: Request, usuario: Usuario = Depends(get_current_user)):
     return usuario
 
 
 @router.put("/cambiar-password", status_code=status.HTTP_204_NO_CONTENT)
-@limiter.limit("5/minute")
+@limiter.limit("10000/minute" if _T else "5/minute")
 def cambiar_password(
     request: Request,
     datos: CambiarPasswordRequest,
