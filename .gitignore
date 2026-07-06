@@ -78,6 +78,8 @@ target/
 # Jupyter Notebook
 .ipynb_checkpoints
 
+test.db
+
 # IPython
 profile_default/
 ipython_config.py
