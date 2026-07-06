@@ -1,6 +1,8 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user
@@ -11,10 +13,15 @@ from app.models.usuario import Usuario
 from app.schemas.lista import ListaCreate, ListaResponse, ListaUpdate
 
 router = APIRouter(prefix="/listas", tags=["listas"])
+limiter = Limiter(key_func=get_remote_address)
+
+MAX_LISTAS_POR_USUARIO = 50
 
 
 @router.get("/", response_model=List[ListaResponse])
+@limiter.limit("60/minute")
 def listar_listas(
+    request: Request,
     db: Session = Depends(get_db),
     usuario: Usuario = Depends(get_current_user),
 ):
@@ -22,11 +29,20 @@ def listar_listas(
 
 
 @router.post("/", response_model=ListaResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("20/minute")
 def crear_lista(
+    request: Request,
     datos: ListaCreate,
     db: Session = Depends(get_db),
     usuario: Usuario = Depends(get_current_user),
 ):
+    total = db.query(Lista).filter(Lista.usuario_id == usuario.id).count()
+    if total >= MAX_LISTAS_POR_USUARIO:
+        raise HTTPException(
+            status_code=400,
+            detail=f"No puedes tener más de {MAX_LISTAS_POR_USUARIO} listas",
+        )
+
     lista = Lista(
         usuario_id=usuario.id,
         nombre=datos.nombre,
@@ -39,7 +55,9 @@ def crear_lista(
 
 
 @router.put("/{lista_id}", response_model=ListaResponse)
+@limiter.limit("30/minute")
 def editar_lista(
+    request: Request,
     lista_id: int,
     datos: ListaUpdate,
     db: Session = Depends(get_db),
@@ -58,7 +76,9 @@ def editar_lista(
 
 
 @router.delete("/{lista_id}", status_code=status.HTTP_204_NO_CONTENT)
+@limiter.limit("20/minute")
 def eliminar_lista(
+    request: Request,
     lista_id: int,
     db: Session = Depends(get_db),
     usuario: Usuario = Depends(get_current_user),

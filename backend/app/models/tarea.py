@@ -35,6 +35,7 @@ class Tarea(Base):
     fecha_limite = Column(DateTime, nullable=True)
     prioridad = Column(Enum(Prioridad), default=Prioridad.MEDIA)
     completada = Column(Boolean, default=False)
+    importante = Column(Boolean, default=False)          # ← NUEVO
     fecha_completada = Column(DateTime, nullable=True)
     origen = Column(Enum(Origen), default=Origen.MANUAL)
     audio_transcripcion = Column(Text, nullable=True)
