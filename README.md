@@ -212,4 +212,3 @@ GROQ_MODEL=openai/gpt-oss-120b
 ## 📄 Licencia
 
 Proyecto personal en desarrollo. No licenciado para uso comercial.  
-*Personal project under development. Not licensed for commercial use.*
